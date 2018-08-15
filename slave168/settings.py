@@ -133,14 +133,16 @@ REDIS_HOST = "127.0.0.1"
 #     'password': 'your password',  # 没有就注释
 # }
 REDIS_PORT = '6379'
-
-# scrapy-redis所需要开启的东西
-# 启用redis的去重类
-DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
-# 启用Redis调度存储请求队列
-SCHEDULER = "scrapy_redis.scheduler.Scheduler"
-# 不清除Redis队列、这样可以暂停/恢复 爬取
+# # 不清除Redis队列、这样可以暂停/恢复 爬取
 SCHEDULER_PERSIST = True
-SCHEDULER_DUPEFILTER_KEY = '%(spider)s:dupefilter'
-REDIS_ITEMS_KEY = '%(spider)s:items'
-REDIS_ITEMS_SERIALIZER = 'json.dumps'
+
+# 以下可选加入到
+# scrapy-redis所需要开启的东西
+# 重新配置各模块
+DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+
+# 可选的调度器队列
+SCHEDULER_QUEUE_CLASS = "scrapy_redis.queue.SpiderPriorityQueue"
+#SCHEDULER_QUEUE_CLASS = "scrapy_redis.queue.SpiderQueue"
+#SCHEDULER_QUEUE_CLASS = "scrapy_redis.queue.SpiderStack"

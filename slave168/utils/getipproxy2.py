@@ -2,6 +2,7 @@ import telnetlib
 import requests
 import re
 import logging
+import threading
 
 # from slave168.settings import IP_PROXY_TIME_OUT
 # 改变为单例模式,无论创建多少个对象都是初始化一次
@@ -18,7 +19,8 @@ class GetIpProxyUtil(object):
 
     def __init__(self):
         if self.__first_init:
-            self.proxys = self.__initproxiesip()
+            self.proxys = []
+            self.__initproxiesip()
             self.__class__.__first_init = False
 
     def __getproxiesip(self):
@@ -35,7 +37,7 @@ class GetIpProxyUtil(object):
         }
         complie = '\d+\.\d+\.\d+\.\d+:\d+'
         # 测试300个代理ip
-        url = 'http://www.66ip.cn/nmtq.php?getnum=10&isp=0&anonymoustype=3&start=&' \
+        url = 'http://www.66ip.cn/nmtq.php?getnum=300&isp=0&anonymoustype=3&start=&' \
               'ports=&export=&ipaddress=&area=0&proxytype=2&api=66ip'
         content = requests.get(url=url, headers=headers)
         ip_ports = re.findall(complie, content.text)
@@ -47,25 +49,31 @@ class GetIpProxyUtil(object):
 # telnet测试
 
     def __initproxiesip(self):
-        proxys_temp = []
         proxys = self.__getproxiesip()
-
+        proxy_thread = []
         for proxy in proxys:
-            try:
-                # 测试连接时间为0.5秒
-                telnetlib.Telnet(proxy['ip'], port=proxy['port'], timeout=0.5)
-            except Exception as e:
-                logging.log(logging.ERROR, msg=proxy['ip']+":"+proxy['port']+"该代理ip不可用，测试超时")
-            else:
-                print(proxy['ip']+":"+proxy['port']+"该代理ip可用，测试成功，正在存储ing")
-                proxys_temp.append(proxy['ip']+":"+proxy['port'])
+            t = threading.Thread(target=self.__testip, args=(proxy, ))
+            t.setDaemon(True)
+            proxy_thread.append(t)
+        for t in proxy_thread:
+            t.start()
+        for t in proxy_thread:
+            t.join()
 
-        return proxys_temp
+    def __testip(self, proxy):
+        try:
+            # 测试连接时间为0.5秒
+            telnetlib.Telnet(proxy['ip'], port=proxy['port'], timeout=0.5)
+        except Exception as e:
+            logging.log(logging.ERROR, msg=proxy['ip'] + ":" + proxy['port'] + "该代理ip不可用，测试超时")
+        else:
+            print(proxy['ip'] + ":" + proxy['port'] + "该代理ip可用，测试成功，正在存储ing")
+            self.proxys.append(proxy['ip'] + ":" + proxy['port'])
 
 
 if __name__ == '__main__':
     a = GetIpProxyUtil()
     print(a.proxys)
-
-    b = GetIpProxyUtil()
-    print(b.proxys)
+    #
+    # b = GetIpProxyUtil()
+    # print(b.proxys)

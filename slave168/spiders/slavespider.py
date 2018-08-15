@@ -43,7 +43,7 @@ class SlaveSpider(RedisSpider):
             item['url'] = response.url
 
         except:
-            redis.conn.sadd('indexExcepturls:', response.url)
+            redis.conn.sadd('', response.url)
             logging.debug(msg='已将索引异常的数据的url：' + response.url + '存储到indexExcepturls:中了')
             return None
         else:
